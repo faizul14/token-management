@@ -4,12 +4,52 @@ import axios from 'axios'
 import { useRouter } from 'next/navigation'
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BASE_URL,
+  baseURL: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:5000',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
   }
 })
+
+/**
+ * Komponen Loader minimalis baru
+ */
+function MinimalistLoader({ color = 'bg-gray-800' }) {
+  // Kita perlu menginjeksi keyframes untuk animasi
+  const styleSheet = `
+    @keyframes bounce-up-down {
+      0%, 100% { 
+        transform: translateY(0); 
+        animation-timing-function: cubic-bezier(0.8, 0, 1, 1); 
+      }
+      50% { 
+        transform: translateY(-10px); 
+        animation-timing-function: cubic-bezier(0, 0, 0.2, 1); 
+      }
+    }
+  `;
+
+  return (
+    <>
+      <style>{styleSheet}</style> {/* Injeksi keyframes */}
+      <div className="flex gap-1.5 justify-center items-center">
+        <div
+          className={`w-2 h-2 rounded-full ${color}`}
+          style={{ animation: 'bounce-up-down 1.4s infinite ease-in-out', animationDelay: '-0.32s' }}
+        ></div>
+        <div
+          className={`w-2 h-2 rounded-full ${color}`}
+          style={{ animation: 'bounce-up-down 1.4s infinite ease-in-out', animationDelay: '-0.16s' }}
+        ></div>
+        <div
+          className={`w-2 h-2 rounded-full ${color}`}
+          style={{ animation: 'bounce-up-down 1.4s infinite ease-in-out' }}
+        ></div>
+      </div>
+    </>
+  );
+}
+
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -101,11 +141,11 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className={`w-full py-2.5 rounded-lg text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl
+                className={`w-full h-[40px] flex justify-center items-center rounded-lg text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl
                   ${isLoading ? 'bg-gray-600 cursor-not-allowed' : 'bg-gray-600 hover:bg-gray-500'}
                 `}
               >
-                {isLoading ? 'Logging in...' : 'Login'}
+                {isLoading ? <MinimalistLoader color="bg-white" /> : 'Login'}
               </button>
 
               {error && (
@@ -120,31 +160,14 @@ export default function LoginPage() {
 
       <footer className="w-full py-6 text-center text-sm text-gray-500">
         <p>
-          &copy; {new Date().getFullYear()} <span className="font-semibold text-gray-700">FMP</span> — Personal File Manager by Faezol.
+          &copy; {new Date().getFullYear()} <span className="font-semibold text-gray-700">FMP</span> — Token Manager by Faezol.
         </p>
       </footer>
       {isLoggingIn && (
         <div className="fixed inset-0 bg-white/70 flex justify-center items-center z-50 transition-opacity duration-300">
-          <div className="text-gray-800 text-lg flex items-center gap-2">
-            <svg
-              className="w-6 h-6 animate-spin text-gray-700"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 018 8h-4l3 3 3-3h-4a8 8 0 01-8 8v-4l-3 3 3 3v-4a8 8 0 01-8-8z"
-              ></path>
-            </svg>
+          {/* Mengganti spinner SVG dengan MinimalistLoader */}
+          <div className="text-gray-800 text-lg flex flex-col items-center gap-3">
+            <MinimalistLoader color="bg-gray-700" />
             Logging in ...
           </div>
         </div>

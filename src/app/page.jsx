@@ -3,6 +3,7 @@ import { useState } from 'react'
 import axios from 'axios'
 import { useRouter } from 'next/navigation'
 
+// Konfigurasi API, sama seperti yang Anda berikan
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_BASE_URL,
   timeout: 30000,
@@ -11,6 +12,8 @@ const api = axios.create({
   }
 })
 
+// Interceptor untuk menyertakan token (jika ada)
+// Catatan: Ini adalah token auth dashboard, bukan token yang dicek
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
@@ -22,72 +25,174 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-export default function UploadPage() {
-  const [file, setFile] = useState(null)
+/**
+ * Komponen Loader minimalis baru
+ */
+function MinimalistLoader({ color = 'bg-gray-800' }) {
+  // Kita perlu menginjeksi keyframes untuk animasi
+  const styleSheet = `
+    @keyframes bounce-up-down {
+      0%, 100% { 
+        transform: translateY(0); 
+        animation-timing-function: cubic-bezier(0.8, 0, 1, 1); 
+      }
+      50% { 
+        transform: translateY(-10px); 
+        animation-timing-function: cubic-bezier(0, 0, 0.2, 1); 
+      }
+    }
+  `;
+
+  return (
+    <>
+      <style>{styleSheet}</style> {/* Injeksi keyframes */}
+      <div className="flex gap-1.5 justify-center items-center">
+        <div
+          className={`w-2 h-2 rounded-full ${color}`}
+          style={{ animation: 'bounce-up-down 1.4s infinite ease-in-out', animationDelay: '-0.32s' }}
+        ></div>
+        <div
+          className={`w-2 h-2 rounded-full ${color}`}
+          style={{ animation: 'bounce-up-down 1.4s infinite ease-in-out', animationDelay: '-0.16s' }}
+        ></div>
+        <div
+          className={`w-2 h-2 rounded-full ${color}`}
+          style={{ animation: 'bounce-up-down 1.4s infinite ease-in-out' }}
+        ></div>
+      </div>
+    </>
+  );
+}
+
+
+/**
+ * Komponen Card untuk menampilkan hasil pengecekan token.
+ * Dibuat agar mirip dengan card di dashboard, tapi untuk mode gelap.
+ */
+function TokenInfoCard({ token }) {
+  const isActive = token.isactive;
+  const statusClass = isActive
+    ? 'bg-green-100 text-green-800'
+    : 'bg-red-100 text-red-800';
+  const expiryDate = new Date(token.expiredAt);
+  const now = new Date();
+
+  // Kalkulasi sisa hari
+  const diffTime = expiryDate.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const isExpired = diffDays <= 0;
+
+  let daysLeftText;
+  let daysLeftClass = "font-bold ";
+
+  if (!isActive) {
+    daysLeftText = "Revoked";
+    daysLeftClass += "text-red-400";
+  } else if (isExpired) {
+    daysLeftText = "Expired";
+    daysLeftClass += "text-red-400";
+  } else {
+    daysLeftText = `${diffDays} hari lagi`;
+    daysLeftClass += diffDays <= 7 ? "text-yellow-400" : "text-green-400";
+  }
+
+  return (
+    <div className="w-full bg-gray-700/30 rounded-2xl p-5 sm:p-6 mt-6 border border-gray-600/30">
+      <div className="flex justify-between items-start mb-3">
+        <h3 className="text-lg font-semibold text-white break-all pr-16">{token.username}</h3>
+        <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${statusClass}`}>
+          {isActive ? 'Active' : 'Revoked'}
+        </span>
+      </div>
+
+      {/* Sisa Hari */}
+      <div className="mb-4">
+        <p className="text-sm text-gray-300">Masa Aktif Tersisa:</p>
+        <p className={`text-2xl ${daysLeftClass}`}>{daysLeftText}</p>
+      </div>
+
+      <hr className="border-gray-600/50 my-4" />
+
+      {/* Info Token */}
+      <div className="mb-4 space-y-2">
+        <p className="text-sm text-gray-300">Token:</p>
+        <pre className="text-xs text-gray-200 bg-gray-800/60 p-3 rounded-md break-all overflow-x-auto">
+          {token.token}
+        </pre>
+      </div>
+
+      {/* Info Tanggal */}
+      <div className="text-sm text-gray-400 space-y-1">
+        <p>
+          Dibuat: {new Date(token.createdAt).toLocaleDateString('id-ID', {
+            year: 'numeric', month: 'long', day: 'numeric'
+          })}
+        </p>
+        <p>
+          Kadaluwarsa: {expiryDate.toLocaleDateString('id-ID', {
+            year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+          })}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+
+export default function CheckTokenPage() {
+  const [tokenInput, setTokenInput] = useState('')
+  const [tokenData, setTokenData] = useState(null)
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
   const router = useRouter()
-  const [downloadUrl, setDownloadUrl] = useState('');
+  // Hapus `router.push('/dashboard')` dari sini
 
-
-  const handleUpload = async (e) => {
+  const handleCheckToken = async (e) => {
     e.preventDefault()
-    if (!file) {
-      setMessage('Pilih file terlebih dahulu')
+    if (!tokenInput) {
+      setError('Silakan masukkan token terlebih dahulu')
       return
     }
 
-    // Validasi ukuran file (maksimal 10MB)
-    const maxSize = 10 * 1024 * 1024 // 10MB dalam bytes
-    if (file.size > maxSize) {
-      setError('Ukuran file terlalu besar. Maksimal 10MB.')
-      return
-    }
-
-    const formData = new FormData()
-    formData.append('file', file)
-
-    // Optional: log isi FormData
-    for (let pair of formData.entries()) {
-      console.log(pair[0], pair[1])
-    }
+    setIsLoading(true)
+    setError(null)
+    setMessage('')
+    setTokenData(null) // Reset data sebelumnya
 
     try {
-      setIsLoading(true)
-      setError(null)
-      console.log('Starting upload...', file.name)
+      console.log('Checking token...', tokenInput)
 
-      const response = await api.post('/api/public/files/upload', formData, {
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
-          console.log('Upload Progress:', percentCompleted)
-        }
+      // Panggil endpoint yang Anda tentukan
+      const response = await api.post('/api/public/xltoken/publicchecktoken', {
+        token: tokenInput
       })
 
-      console.log('Upload response:', response.data)
-      setMessage('Upload berhasil!')
-      setDownloadUrl(response.data.url); // Simpan URL dari response upload
-      setFile(null)
+      console.log('Check response:', response.data)
 
-      // Redirect ke halaman utama setelah 2 detik
-      setTimeout(() => {
-        router.push('/')
-      }, 2000)
-    } catch (err) {
-      console.error('Upload error:', err)
-      if (err.response) {
-        const errorMessage = err.response.data.message || 'Terjadi kesalahan pada server'
-        console.error('Server error:', errorMessage)
-        setError(`Upload gagal: ${errorMessage}`)
-      } else if (err.request) {
-        console.error('Network error:', err.request)
-        setError('Upload gagal: Tidak ada response dari server. Periksa koneksi internet Anda.')
+      // Asumsi: response.data adalah objek token lengkap
+      // Jika endpoint mengembalikan { message: "...", data: {...} }, ganti response.data menjadi response.data.data
+      const tokenInfo = response.data.data || response.data; // Fleksibel, mencoba .data dulu
+
+      if (tokenInfo && tokenInfo.username && tokenInfo.expiredAt) {
+        setTokenData(tokenInfo)
+        setMessage(response.data.message || 'Token berhasil ditemukan.')
+      } else if (response.data.isactive === false) {
+        // Handle jika token ditemukan tapi tidak aktif (sesuai doc)
+        setError(response.data.message || 'Token ditemukan tapi tidak aktif.')
+      } else if (response.data.isactive === true) {
+        // Handle jika doc checktoken diikuti, tapi data token tidak ada
+        setError('Token valid, tapi data lengkap tidak diterima. (API Response tidak lengkap)')
+        setMessage(response.data.message)
       } else {
-        console.error('Error:', err.message)
-        setError(`Upload gagal: ${err.message}`)
+        setError(response.data.message || 'Token valid, tapi data tidak lengkap.')
       }
-      setMessage('Upload gagal!')
+
+    } catch (err) {
+      console.error('Check error:', err)
+      const errorMessage = err.response?.data?.message || err.message || 'Terjadi kesalahan'
+      setError(`Pengecekan gagal: ${errorMessage}`)
+      setTokenData(null)
     } finally {
       setIsLoading(false)
     }
@@ -105,47 +210,21 @@ export default function UploadPage() {
               {/* Content */}
               <div className="relative p-6 sm:p-8">
                 <h1 className="text-2xl sm:text-3xl font-bold text-white text-center mb-6 sm:mb-8">
-                  Ikat File
+                  Cek Status Token
                 </h1>
 
-                <form onSubmit={handleUpload} className="space-y-6">
+                <form onSubmit={handleCheckToken} className="space-y-6">
                   <div className="space-y-4">
                     <div className="relative">
                       <input
-                        type="file"
-                        onChange={(e) => {
-                          const selectedFile = e.target.files[0]
-                          if (selectedFile) {
-                            console.log('Selected file:', {
-                              name: selectedFile.name,
-                              type: selectedFile.type,
-                              size: selectedFile.size
-                            })
-                            setFile(selectedFile)
-                          }
-                        }}
-                        className="block w-full text-sm text-white
-                                        file:mr-4 file:py-2 sm:file:py-3 file:px-4
-                                        file:rounded-lg file:border-0
-                                        file:text-sm file:font-medium
-                                        file:bg-gray-600/50 file:text-white
-                                        hover:file:bg-gray-600/70
-                                        file:shadow-lg
-                                        file:transition-all file:duration-200"
+                        type="text"
+                        placeholder="Masukkan token di sini..."
+                        value={tokenInput}
+                        onChange={(e) => setTokenInput(e.target.value)}
+                        className="w-full py-2.5 px-4 bg-gray-700/20 text-white border border-gray-600/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400/30"
                         disabled={isLoading}
                       />
                     </div>
-
-                    {file && (
-                      <div className="bg-gray-700/30 rounded-lg p-3 sm:p-4  border border-gray-600/30">
-                        <p className="text-sm text-white break-words">
-                          Selected file: {file.name}
-                        </p>
-                        <p className="text-xs text-gray-300 mt-1">
-                          Size: {(file.size / 1024).toFixed(2)} KB
-                        </p>
-                      </div>
-                    )}
                   </div>
 
                   <div className="flex flex-col gap-3 sm:gap-4">
@@ -159,7 +238,7 @@ export default function UploadPage() {
                                     transition-all duration-200 shadow-lg hover:shadow-xl`}
                       disabled={isLoading}
                     >
-                      {isLoading ? 'Uploading...' : 'Upload File'}
+                      {isLoading ? 'Checking...' : 'Check Token'}
                     </button>
 
                     <button
@@ -174,47 +253,30 @@ export default function UploadPage() {
                       Kembali ke Dashboard
                     </button>
                   </div>
-                  <div className="p-3 sm:p-4 text-center">
-                    <p className="text-white/90 text-sm">Maksimal ukuran file 10MB</p>
-                  </div>
 
-                  {error && (
-                    <div className="p-3 sm:p-4 bg-gray-700/30 rounded-lg  border border-gray-600/30">
-                      <p className="text-white/90 text-sm">{error}</p>
-                    </div>
-                  )}
-
-                  {message && (
-                    <div className="p-3 sm:p-4 bg-gray-700/30 rounded-lg  border border-gray-600/30">
-                      <p className="text-white text-sm">{message}</p>
-                    </div>
-                  )}
-                  {downloadUrl && (
-                    <div className="p-3 sm:p-4 bg-gray-700/30 rounded-lg border border-gray-600/30 mt-2 text-white/90 text-sm">
-                      <p>Link download:</p>
-                      <div className="mt-1 flex items-center gap-2 bg-gray-800 rounded-lg px-3 py-2">
-                        <div className="flex-1 break-all text-blue-400">
-                          <span className="text-blue-400 cursor-text hover:underline">
-                            {downloadUrl}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(downloadUrl)
-                              .then(() => {
-                                setMessage('Link berhasil disalin!');
-                                setTimeout(() => setMessage('Upload berhasil!'), 2000)
-                              });
-                          }}
-                          className="bg-gray-600 hover:bg-gray-500 text-white text-xs px-3 py-1.5 rounded-md transition-all"
-                        >
-                          Copy
-                        </button>
+                  {/* Area Hasil */}
+                  <div className="pt-4">
+                    {isLoading && (
+                      <div className="flex justify-center items-center py-2">
+                        <MinimalistLoader color="bg-white" />
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">Tempel link di browser untuk unduh otomatis</p>
-                    </div>
-                  )}
+                    )}
 
+                    {error && (
+                      <div className="p-3 sm:p-4 bg-red-800/30 rounded-lg border border-red-600/30">
+                        <p className="text-red-300 text-sm text-center">{error}</p>
+                      </div>
+                    )}
+
+                    {message && !error && !tokenData && (
+                      <div className="p-3 sm:p-4 bg-blue-800/30 rounded-lg border border-blue-600/30">
+                        <p className="text-blue-300 text-sm text-center">{message}</p>
+                      </div>
+                    )}
+
+                    {/* Tampilkan Card jika data token ada */}
+                    {tokenData && <TokenInfoCard token={tokenData} />}
+                  </div>
 
                 </form>
               </div>
@@ -223,7 +285,7 @@ export default function UploadPage() {
         </div>
         <footer className="w-full mt-0 py-6 text-center text-sm text-gray-500">
           <p>
-            &copy; {new Date().getFullYear()} <span className="font-semibold text-gray-700">FMP</span> — Personal File Manager by Faezol.
+            &copy; {new Date().getFullYear()} <span className="font-semibold text-gray-700">FMP</span> — Token Manager by Faezol.
           </p>
         </footer>
 

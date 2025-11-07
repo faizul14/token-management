@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 
 // Buat instance axios dengan konfigurasi dasar
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_BASE_URL, // Fallback ke localhost:5000
+    baseURL: process.env.NEXT_PUBLIC_BASE_URL,
     timeout: 10000, // timeout 10 detik
     headers: {
         'Content-Type': 'application/json',
@@ -42,9 +42,50 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 )
 
+/**
+ * Komponen Loader minimalis baru
+ */
+function MinimalistLoader({ color = 'bg-gray-800' }) {
+    // Kita perlu menginjeksi keyframes untuk animasi
+    const styleSheet = `
+    @keyframes bounce-up-down {
+      0%, 100% { 
+        transform: translateY(0); 
+        animation-timing-function: cubic-bezier(0.8, 0, 1, 1); 
+      }
+      50% { 
+        transform: translateY(-10px); 
+        animation-timing-function: cubic-bezier(0, 0, 0.2, 1); 
+      }
+    }
+  `;
+
+    return (
+        <>
+            <style>{styleSheet}</style> {/* Injeksi keyframes */}
+            <div className="flex gap-1.5 justify-center items-center">
+                <div
+                    className={`w-2 h-2 rounded-full ${color}`}
+                    style={{ animation: 'bounce-up-down 1.4s infinite ease-in-out', animationDelay: '-0.32s' }}
+                ></div>
+                <div
+                    className={`w-2 h-2 rounded-full ${color}`}
+                    style={{ animation: 'bounce-up-down 1.4s infinite ease-in-out', animationDelay: '-0.16s' }}
+                ></div>
+                <div
+                    className={`w-2 h-2 rounded-full ${color}`}
+                    style={{ animation: 'bounce-up-down 1.4s infinite ease-in-out' }}
+                ></div>
+            </div>
+        </>
+    );
+}
+
+
 // Komponen baru untuk menampilkan data token
 function TokenCard({ token, onRevoke, onExtend, onDelete }) {
     const [isCopied, setIsCopied] = useState(false)
+    const [isShareCopied, setIsShareCopied] = useState(false) // State baru untuk tombol share
 
     const copyToClipboard = (text) => {
         // Fallback untuk 'document.execCommand'
@@ -62,6 +103,44 @@ function TokenCard({ token, onRevoke, onExtend, onDelete }) {
         }
         document.body.removeChild(textArea);
     }
+
+    // Fungsi baru untuk handle share
+    const handleShare = () => {
+        const expiryDate = new Date(token.expiredAt);
+        const shareText = `
+--- Token Info ---
+Username: ${token.username}
+Token: ${token.token}
+Status: ${token.isactive ? 'Active' : 'Revoked'}
+Expires: ${expiryDate.toLocaleString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+---
+        `.trim();
+
+        if (navigator.share) {
+            navigator.share({
+                title: `Token for ${token.username}`,
+                text: shareText,
+            })
+                .then(() => console.log('Successful share'))
+                .catch((error) => console.log('Error sharing', error));
+        } else {
+            // Fallback: Copy to clipboard
+            const textArea = document.createElement("textarea");
+            textArea.value = shareText;
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                setIsShareCopied(true); // Gunakan state baru
+                setTimeout(() => setIsShareCopied(false), 2000);
+            } catch (err) {
+                console.error('Failed to copy share text: ', err);
+            }
+            document.body.removeChild(textArea);
+        }
+    };
+
 
     const isActive = token.isactive
     const statusClass = isActive
@@ -120,23 +199,33 @@ function TokenCard({ token, onRevoke, onExtend, onDelete }) {
             <hr className="my-4" />
 
             <div className="flex flex-wrap gap-2">
+                <button
+                    onClick={handleShare}
+                    className="flex-auto text-sm bg-gray-500 text-white px-3 py-1.5 rounded-md hover:bg-gray-600 transition-colors flex items-center justify-center gap-1.5"
+                    title="Share or copy all token info"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                    </svg>
+                    <span>{isShareCopied ? 'Copied!' : 'Share'}</span>
+                </button>
                 {isActive && (
                     <button
                         onClick={() => onRevoke(token._id)}
-                        className="flex-1 text-sm bg-yellow-500 text-white px-3 py-1.5 rounded-md hover:bg-yellow-600 transition-colors"
+                        className="flex-auto text-sm bg-yellow-500 text-white px-3 py-1.5 rounded-md hover:bg-yellow-600 transition-colors"
                     >
                         Revoke
                     </button>
                 )}
                 <button
                     onClick={() => onExtend(token)}
-                    className="flex-1 text-sm bg-blue-500 text-white px-3 py-1.5 rounded-md hover:bg-blue-600 transition-colors"
+                    className="flex-auto text-sm bg-blue-500 text-white px-3 py-1.5 rounded-md hover:bg-blue-600 transition-colors"
                 >
                     {isActive ? 'Extend' : 'Reactivate'}
                 </button>
                 <button
                     onClick={() => onDelete(token._id)}
-                    className="flex-1 text-sm bg-red-600 text-white px-3 py-1.5 rounded-md hover:bg-red-700 transition-colors"
+                    className="flex-auto text-sm bg-red-600 text-white px-3 py-1.5 rounded-md hover:bg-red-700 transition-colors"
                 >
                     Delete
                 </button>
@@ -322,7 +411,8 @@ export default function Dashboard() {
 
     if (isCheckingAuth) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
+            <div className="flex justify-center items-center min-h-screen flex-col gap-4">
+                <MinimalistLoader color="bg-gray-600" />
                 <p className="text-gray-600">Checking authentication...</p>
             </div>
         )
@@ -391,7 +481,7 @@ export default function Dashboard() {
 
                     {isLoading ? (
                         <div className="flex justify-center items-center py-12">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800"></div>
+                            <MinimalistLoader color="bg-gray-800" />
                         </div>
                     ) : error ? (
                         <div className="bg-red-50/50 border border-red-100 rounded-lg p-4">
@@ -422,33 +512,15 @@ export default function Dashboard() {
             </main>
             <footer className="w-full mt-12 py-6 text-center text-sm text-gray-500">
                 <p>
-                    &copy; {new Date().getFullYear()} <span className="font-semibold text-gray-700">XLToken</span> — Token Manager.
+                    &copy; {new Date().getFullYear()} <span className="font-semibold text-gray-700">FMP</span> — Token Manager by Faezol.
                 </p>
             </footer>
 
             {/* Logout Overlay */}
             {isLoggingOut && (
                 <div className="fixed inset-0 bg-white/70 flex justify-center items-center z-50 transition-opacity duration-300">
-                    <div className="text-gray-800 text-lg flex items-center gap-2">
-                        <svg
-                            className="w-6 h-6 animate-spin text-gray-700"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                        >
-                            <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                            ></circle>
-                            <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 018 8h-4l3 3 3-3h-4a8 8 0 01-8 8v-4l-3 3 3 3v-4a8 8 0 01-8-8z"
-                            ></path>
-                        </svg>
+                    <div className="text-gray-800 text-lg flex flex-col items-center gap-3">
+                        <MinimalistLoader color="bg-gray-700" />
                         Logging out...
                     </div>
                 </div>
