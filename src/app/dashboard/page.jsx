@@ -405,7 +405,7 @@ export default function Dashboard() {
         setIsLoggingOut(true)
         setTimeout(() => {
             localStorage.removeItem('token')
-            router.push('/auth/login')
+            router.push('/auth/loginv2')
         }, 1500) // Logout lebih cepat
     }
 
