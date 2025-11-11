@@ -1,295 +1,283 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { useRouter } from 'next/navigation'
 
-// Konfigurasi API, sama seperti yang Anda berikan
+// Konfigurasi API
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_BASE_URL,
   timeout: 30000,
-  headers: {
-    'Accept': '*/*',
-  }
+  headers: { 'Accept': '*/*' }
 })
 
-// Interceptor untuk menyertakan token (jika ada)
-// Catatan: Ini adalah token auth dashboard, bukan token yang dicek
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers['Bearer'] = token
-    }
-    return config
-  },
-  (error) => Promise.reject(error)
-)
-
-/**
- * Komponen Loader minimalis baru
- */
-function MinimalistLoader({ color = 'bg-gray-800' }) {
-  // Kita perlu menginjeksi keyframes untuk animasi
+// Loader Minimalis
+function MinimalistLoader({ color = 'bg-emerald-600' }) {
   const styleSheet = `
     @keyframes bounce-up-down {
-      0%, 100% { 
-        transform: translateY(0); 
-        animation-timing-function: cubic-bezier(0.8, 0, 1, 1); 
-      }
-      50% { 
-        transform: translateY(-10px); 
-        animation-timing-function: cubic-bezier(0, 0, 0.2, 1); 
-      }
+      0%, 100% { transform: translateY(0); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
+      50% { transform: translateY(-6px); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
     }
   `;
-
   return (
     <>
-      <style>{styleSheet}</style> {/* Injeksi keyframes */}
-      <div className="flex gap-1.5 justify-center items-center">
-        <div
-          className={`w-2 h-2 rounded-full ${color}`}
-          style={{ animation: 'bounce-up-down 1.4s infinite ease-in-out', animationDelay: '-0.32s' }}
-        ></div>
-        <div
-          className={`w-2 h-2 rounded-full ${color}`}
-          style={{ animation: 'bounce-up-down 1.4s infinite ease-in-out', animationDelay: '-0.16s' }}
-        ></div>
-        <div
-          className={`w-2 h-2 rounded-full ${color}`}
-          style={{ animation: 'bounce-up-down 1.4s infinite ease-in-out' }}
-        ></div>
+      <style>{styleSheet}</style>
+      <div className="flex gap-1.5 justify-center items-center px-4 py-2">
+        <div className={`w-1.5 h-1.5 rounded-full ${color}`} style={{ animation: 'bounce-up-down 1s infinite ease-in-out', animationDelay: '-0.32s' }}></div>
+        <div className={`w-1.5 h-1.5 rounded-full ${color}`} style={{ animation: 'bounce-up-down 1s infinite ease-in-out', animationDelay: '-0.16s' }}></div>
+        <div className={`w-1.5 h-1.5 rounded-full ${color}`} style={{ animation: 'bounce-up-down 1s infinite ease-in-out' }}></div>
       </div>
     </>
   );
 }
 
+// Komponen Info Slider Baru (Diperbarui agar Elastis)
+function InfoSlider() {
+  // Data dummy objek untuk prototipe dengan tanggal dan teks panjang untuk tes elastisitas
+  const dummyInfo = [
+    {
+      informasi: "Pemeliharaan sistem dijadwalkan pada hari Sabtu pukul 23:00 WIB. Layanan mungkin akan terganggu sementara waktu selama proses berlangsung. Mohon maaf atas ketidaknyamanan ini. Kami berupaya untuk menyelesaikan pemeliharaan secepat mungkin agar Anda dapat kembali menggunakan layanan kami dengan normal.",
+      createAt: "2025-11-10T08:00:00Z"
+    },
+    {
+      informasi: "Fitur baru 'Token Checker V2' kini telah tersedia! Nikmati tampilan yang lebih segar dan informasi yang lebih lengkap untuk memeriksa status token Anda dengan mudah.",
+      createAt: "2025-11-09T14:30:00Z"
+    },
+    {
+      informasi: "Jangan pernah membagikan token Anda kepada pihak yang tidak berwenang. Keamanan akun Anda adalah prioritas kami. Selalu pastikan Anda mengakses layanan dari domain resmi.",
+      createAt: "2025-11-08T09:15:00Z"
+    }
+  ];
 
-/**
- * Komponen Card untuk menampilkan hasil pengecekan token.
- * Dibuat agar mirip dengan card di dashboard, tapi untuk mode gelap.
- */
-function TokenInfoCard({ token }) {
-  const isActive = token.isactive;
-  const statusClass = isActive
-    ? 'bg-green-100 text-green-800'
-    : 'bg-red-100 text-red-800';
-  const expiryDate = new Date(token.expiredAt);
-  const now = new Date();
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false); // State untuk kontrol animasi
 
-  // Kalkulasi sisa hari
-  const diffTime = expiryDate.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  const isExpired = diffDays <= 0;
+  useEffect(() => {
+    if (dummyInfo.length <= 1) return;
 
-  let daysLeftText;
-  let daysLeftClass = "font-bold ";
+    const interval = setInterval(() => {
+      setIsAnimating(true); // Mulai animasi keluar
+      setTimeout(() => {
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % dummyInfo.length);
+        setIsAnimating(false); // Selesai animasi keluar, mulai animasi masuk (otomatis karena key berubah)
+      }, 300); // Durasi animasi keluar (harus sinkron dengan CSS transition)
+    }, 6000);
 
-  if (!isActive) {
-    daysLeftText = "Revoked";
-    daysLeftClass += "text-red-400";
-  } else if (isExpired) {
-    daysLeftText = "Expired";
-    daysLeftClass += "text-red-400";
-  } else {
-    daysLeftText = `${diffDays} hari lagi`;
-    daysLeftClass += diffDays <= 7 ? "text-yellow-400" : "text-green-400";
-  }
+    return () => clearInterval(interval);
+  }, [dummyInfo.length]);
+
+  const currentItem = dummyInfo[currentIndex];
 
   return (
-    <div className="w-full bg-gray-700/30 rounded-2xl p-5 sm:p-6 mt-6 border border-gray-600/30">
-      <div className="flex justify-between items-start mb-3">
-        <h3 className="text-lg font-semibold text-white break-all pr-16">{token.username}</h3>
-        <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${statusClass}`}>
-          {isActive ? 'Active' : 'Revoked'}
-        </span>
+    <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 mb-8 relative min-h-[130px] flex flex-col">
+      {/* Ikon Background Tetap */}
+      <div className="absolute top-2 right-2 opacity-20 pointer-events-none">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
       </div>
 
-      {/* Sisa Hari */}
-      <div className="mb-4">
-        <p className="text-sm text-gray-300">Masa Aktif Tersisa:</p>
-        <p className={`text-2xl ${daysLeftClass}`}>{daysLeftText}</p>
-      </div>
+      <div className="relative z-10 w-full flex-1 flex flex-col">
+        <h4 className="text-emerald-800 font-bold mb-3 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+          </svg>
+          Informasi Penting
+        </h4>
 
-      <hr className="border-gray-600/50 my-4" />
+        {/* Kontainer Konten yang Elastis */}
+        <div
+          className={`flex-1 transition-opacity duration-300 ease-in-out ${isAnimating ? 'opacity-0' : 'opacity-100'}`}
+        >
+          <p className="text-sm text-emerald-700 text-justify leading-relaxed">
+            {currentItem.informasi}
+          </p>
+          <p className="text-xs text-emerald-500 mt-2 font-medium text-right">
+            {new Date(currentItem.createAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          </p>
+        </div>
 
-      {/* Info Token */}
-      <div className="mb-4 space-y-2">
-        <p className="text-sm text-gray-300">Token:</p>
-        <pre className="text-xs text-gray-200 bg-gray-800/60 p-3 rounded-md break-all overflow-x-auto">
-          {token.token}
-        </pre>
-      </div>
-
-      {/* Info Tanggal */}
-      <div className="text-sm text-gray-400 space-y-1">
-        <p>
-          Dibuat: {new Date(token.createdAt).toLocaleDateString('id-ID', {
-            year: 'numeric', month: 'long', day: 'numeric'
-          })}
-        </p>
-        <p>
-          Kadaluwarsa: {expiryDate.toLocaleDateString('id-ID', {
-            year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-          })}
-        </p>
+        {/* Indikator Dots */}
+        <div className="flex gap-1.5 mt-4 justify-center">
+          {dummyInfo.map((_, index) => (
+            <div
+              key={index}
+              className={`h-1.5 rounded-full transition-all duration-300 ${index === currentIndex ? 'w-4 bg-emerald-400' : 'w-1.5 bg-emerald-200'}`}
+            ></div>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
+// Komponen Card Hasil Pengecekan (Sama seperti V1)
+function TokenInfoCard({ token }) {
+  const isActive = token.isactive;
+  const isExpired = new Date(token.expiredAt) < new Date();
+  const now = new Date();
+  const diffTime = new Date(token.expiredAt).getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-export default function CheckTokenPage() {
+  let statusBadge;
+  if (!isActive) {
+    statusBadge = <span className="px-3 py-1 rounded-full text-xs font-bold tracking-wide bg-red-100 text-red-800">REVOKED</span>;
+  } else if (isExpired) {
+    statusBadge = <span className="px-3 py-1 rounded-full text-xs font-bold tracking-wide bg-orange-100 text-orange-800">EXPIRED</span>;
+  } else {
+    statusBadge = <span className="px-3 py-1 rounded-full text-xs font-bold tracking-wide bg-green-100 text-green-800">ACTIVE</span>;
+  }
+
+  return (
+    <div className="w-full bg-white rounded-3xl p-6 mt-8 border border-gray-200 shadow-lg animate-fade-in-up">
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h3 className="text-lg font-bold text-gray-900">{token.username}</h3>
+          <p className="text-sm text-gray-500 mt-1">Token Checker Result</p>
+        </div>
+        {statusBadge}
+      </div>
+
+      <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200 mb-6">
+        <p className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Token Value</p>
+        <div className="flex items-center justify-between gap-3">
+          <code className="text-sm text-gray-800 truncate font-mono flex-1 font-medium bg-white p-2 rounded-lg border border-gray-100">
+            {token.token}
+          </code>
+          <button onClick={() => navigator.clipboard.writeText(token.token)} className="text-emerald-600 hover:bg-emerald-50 p-2 rounded-lg transition-colors" title="Copy Token">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 text-sm">
+        <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+          <p className="text-emerald-800 font-medium mb-1">Sisa Waktu</p>
+          <p className={`text-2xl font-bold ${diffDays <= 7 ? 'text-orange-600' : 'text-emerald-600'}`}>
+            {isActive && !isExpired ? `${diffDays} Hari` : '-'}
+          </p>
+        </div>
+        <div className="space-y-3 py-2">
+          <div>
+            <p className="text-gray-500 text-xs">Dibuat Pada</p>
+            <p className="font-medium text-gray-900">
+              {new Date(token.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Kadaluwarsa</p>
+            <p className="font-medium text-gray-900">
+              {new Date(token.expiredAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function CheckTokenPageV2() {
   const [tokenInput, setTokenInput] = useState('')
   const [tokenData, setTokenData] = useState(null)
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
   const router = useRouter()
-  // Hapus `router.push('/dashboard')` dari sini
+
+  const mainColor = 'bg-emerald-600';
+  const mainColorHover = 'hover:bg-emerald-700';
+  const textColor = 'text-emerald-600';
 
   const handleCheckToken = async (e) => {
     e.preventDefault()
-    if (!tokenInput) {
-      setError('Silakan masukkan token terlebih dahulu')
-      return
-    }
-
-    setIsLoading(true)
-    setError(null)
-    setMessage('')
-    setTokenData(null) // Reset data sebelumnya
+    if (!tokenInput) return setError('Silakan masukkan token terlebih dahulu')
+    setIsLoading(true); setError(null); setMessage(''); setTokenData(null)
 
     try {
-      console.log('Checking token...', tokenInput)
-
-      // Panggil endpoint yang Anda tentukan
-      const response = await api.post('/api/public/xltoken/publicchecktoken', {
-        token: tokenInput
-      })
-
-      console.log('Check response:', response.data)
-
-      // Asumsi: response.data adalah objek token lengkap
-      // Jika endpoint mengembalikan { message: "...", data: {...} }, ganti response.data menjadi response.data.data
-      const tokenInfo = response.data.data || response.data; // Fleksibel, mencoba .data dulu
-
+      const response = await api.post('/api/public/xltoken/publicchecktoken', { token: tokenInput })
+      const tokenInfo = response.data.data || response.data;
       if (tokenInfo && tokenInfo.username && tokenInfo.expiredAt) {
-        setTokenData(tokenInfo)
-        setMessage(response.data.message || 'Token berhasil ditemukan.')
-      } else if (response.data.isactive === false) {
-        // Handle jika token ditemukan tapi tidak aktif (sesuai doc)
-        setError(response.data.message || 'Token ditemukan tapi tidak aktif.')
-      } else if (response.data.isactive === true) {
-        // Handle jika doc checktoken diikuti, tapi data token tidak ada
-        setError('Token valid, tapi data lengkap tidak diterima. (API Response tidak lengkap)')
-        setMessage(response.data.message)
+        setTokenData(tokenInfo); setMessage(response.data.message || 'Token berhasil ditemukan.')
       } else {
         setError(response.data.message || 'Token valid, tapi data tidak lengkap.')
       }
-
     } catch (err) {
-      console.error('Check error:', err)
-      const errorMessage = err.response?.data?.message || err.message || 'Terjadi kesalahan'
-      setError(`Pengecekan gagal: ${errorMessage}`)
-      setTokenData(null)
-    } finally {
-      setIsLoading(false)
-    }
+      setError(`Pengecekan gagal: ${err.response?.data?.message || err.message || 'Terjadi kesalahan'}`)
+    } finally { setIsLoading(false) }
   }
 
   return (
-    <>
-      <div className="flex flex-col min-h-screen bg-gray-800">
-        <div className="flex flex-grow bg-gray-800  items-center justify-center p-4">
-          <div className="w-full max-w-md">
-            <div className="relative">
-              {/* Glass effect background */}
-              <div className="absolute inset-0 bg-gray-700/30  rounded-3xl shadow-2xl border border-gray-600/30"></div>
+    <div className="min-h-screen w-full flex flex-col bg-gray-50 font-['Poppins',_sans-serif]">
+      <style jsx global>{`
+            @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+            @keyframes fade-in-up {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .animate-fade-in-up { animation: fade-in-up 0.5s ease-out; }
+        `}</style>
 
-              {/* Content */}
-              <div className="relative p-6 sm:p-8">
-                <h1 className="text-2xl sm:text-3xl font-bold text-white text-center mb-6 sm:mb-8">
-                  Cek Status Token
-                </h1>
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-[30px] shadow-2xl p-8 sm:p-10 relative overflow-hidden">
+            {/* Hiasan Background */}
+            <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-50 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
+            <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-50 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
 
-                <form onSubmit={handleCheckToken} className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Masukkan token di sini..."
-                        value={tokenInput}
-                        onChange={(e) => setTokenInput(e.target.value)}
-                        className="w-full py-2.5 px-4 bg-gray-700/20 text-white border border-gray-600/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400/30"
-                        disabled={isLoading}
-                      />
-                    </div>
+            <div className="relative z-10">
+              {/* --- Info Slider Ditambahkan di sini --- */}
+              <InfoSlider />
+              {/* --------------------------------------- */}
+
+              <div className="text-center mb-8">
+                <h1 className={`text-3xl font-bold ${textColor} mb-2`}>Cek Status Token</h1>
+                <p className="text-gray-500">Masukkan token Anda untuk melihat detail status dan masa aktifnya.</p>
+              </div>
+
+              <form onSubmit={handleCheckToken} className="space-y-4">
+                <div className="bg-gray-50 flex items-center px-4 rounded-2xl border-2 border-transparent focus-within:border-emerald-500 focus-within:bg-white transition-all overflow-hidden">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+                  <input
+                    type="text"
+                    placeholder="Tempel token di sini..."
+                    value={tokenInput}
+                    onChange={(e) => setTokenInput(e.target.value)}
+                    className="w-full py-4 px-3 bg-transparent outline-none placeholder-gray-400 text-gray-700 font-medium"
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-3 pt-2">
+                  <button type="submit" disabled={isLoading} className={`w-full py-4 ${mainColor} text-white font-bold rounded-full ${mainColorHover} transition-all shadow-lg shadow-emerald-200/50 uppercase tracking-wider flex justify-center items-center`}>
+                    {isLoading ? <MinimalistLoader color="bg-white" /> : 'PERIKSA SEKARANG'}
+                  </button>
+                  <button type="button" onClick={() => router.push('/dashboardv2')} className="w-full py-4 bg-white text-gray-700 font-bold rounded-full hover:bg-gray-50 border-2 border-gray-200 transition-all uppercase tracking-wider">
+                    Kembali ke Dashboard
+                  </button>
+                </div>
+              </form>
+
+              {/* Area Hasil */}
+              <div className="mt-2">
+                {error && (
+                  <div className="p-4 mt-6 bg-red-50 rounded-2xl border border-red-100 text-red-600 text-center text-sm font-medium animate-fade-in-up">
+                    {error}
                   </div>
-
-                  <div className="flex flex-col gap-3 sm:gap-4">
-                    <button
-                      type="submit"
-                      className={`w-full py-2 sm:py-3 px-4 rounded-lg text-white font-medium
-                                    ${isLoading
-                          ? 'bg-gray-600 cursor-not-allowed'
-                          : 'bg-gray-600 hover:bg-gray-500'
-                        }
-                                    transition-all duration-200 shadow-lg hover:shadow-xl`}
-                      disabled={isLoading}
-                    >
-                      {isLoading ? 'Checking...' : 'Check Token'}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => router.push('/dashboard')}
-                      className="w-full py-2 sm:py-3 px-4 rounded-lg text-white 
-                                    hover:text-white/90 font-medium
-                                    bg-gray-700/30 hover:bg-gray-700/50
-                                    transition-all duration-200
-                                    border border-gray-600/30"
-                    >
-                      Kembali ke Dashboard
-                    </button>
+                )}
+                {message && !error && !tokenData && (
+                  <div className="p-4 mt-6 bg-blue-50 rounded-2xl border border-blue-100 text-blue-600 text-center text-sm font-medium animate-fade-in-up">
+                    {message}
                   </div>
-
-                  {/* Area Hasil */}
-                  <div className="pt-4">
-                    {isLoading && (
-                      <div className="flex justify-center items-center py-2">
-                        <MinimalistLoader color="bg-white" />
-                      </div>
-                    )}
-
-                    {error && (
-                      <div className="p-3 sm:p-4 bg-red-800/30 rounded-lg border border-red-600/30">
-                        <p className="text-red-300 text-sm text-center">{error}</p>
-                      </div>
-                    )}
-
-                    {message && !error && !tokenData && (
-                      <div className="p-3 sm:p-4 bg-blue-800/30 rounded-lg border border-blue-600/30">
-                        <p className="text-blue-300 text-sm text-center">{message}</p>
-                      </div>
-                    )}
-
-                    {/* Tampilkan Card jika data token ada */}
-                    {tokenData && <TokenInfoCard token={tokenData} />}
-                  </div>
-
-                </form>
+                )}
+                {tokenData && <TokenInfoCard token={tokenData} />}
               </div>
             </div>
           </div>
         </div>
-        <footer className="w-full mt-0 py-6 text-center text-sm text-gray-500">
-          <p>
-            &copy; {new Date().getFullYear()} <span className="font-semibold text-gray-700">FMP</span> — Token Manager by Faezol.
-          </p>
-        </footer>
-
       </div>
-    </>
+
+      <footer className="w-full py-6 text-center text-sm text-gray-500">
+        <p>&copy; {new Date().getFullYear()} <span className="font-semibold text-gray-700">XLToken</span> — Token Manager.</p>
+      </footer>
+    </div>
   )
 }

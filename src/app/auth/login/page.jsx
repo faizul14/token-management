@@ -86,7 +86,7 @@ export default function LoginPage() {
       if (token) {
         localStorage.setItem('token', token)
         setTimeout(() => {
-          router.push('/dashboard')
+          router.push('/dashboardv2')
         }, 2000)
       } else {
         setError('Token tidak ditemukan dalam response')
