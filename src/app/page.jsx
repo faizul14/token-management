@@ -276,7 +276,7 @@ export default function CheckTokenPageV2() {
       </div>
 
       <footer className="w-full py-6 text-center text-sm text-gray-500">
-        <p>&copy; {new Date().getFullYear()} <span className="font-semibold text-gray-700">XLToken</span> — Token Manager.</p>
+        &copy; {new Date().getFullYear()} <span className="font-semibold text-gray-700">FMP</span> — Token Manager by Faezol.
       </footer>
     </div>
   )
