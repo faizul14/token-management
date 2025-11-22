@@ -128,7 +128,7 @@ function TokenListItem({ token, onAction, actionLabel, actionColor, showRevokedS
             </div>
             <button
                 onClick={() => onAction(token)}
-                className={`text-xs font-semibold px-3 py-1.5 rounded-lg border ${actionColor} transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 shrink-0 ml-4 shadow-sm`}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-lg border ${actionColor} transition-all opacity-100 group-hover:opacity-100 focus:opacity-100 shrink-0 ml-4 shadow-sm`}
             >
                 {actionLabel}
             </button>
