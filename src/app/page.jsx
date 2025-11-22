@@ -67,7 +67,7 @@ function InfoSlider() {
         setCurrentIndex((prevIndex) => (prevIndex + 1) % infos.length);
         setIsAnimating(false);
       }, 300);
-    }, 6000);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [infos.length]);
@@ -106,7 +106,7 @@ function InfoSlider() {
         <div
           className={`flex-1 transition-opacity duration-300 ease-in-out ${isAnimating ? 'opacity-0' : 'opacity-100'}`}
         >
-          <p className="text-sm text-emerald-700 text-justify leading-relaxed">
+          <p className="text-sm text-emerald-700 text-justify leading-relaxed whitespace-pre-wrap">
             {currentItem.information}
           </p>
           <p className="text-xs text-emerald-500 mt-2 font-medium text-right">
