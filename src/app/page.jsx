@@ -30,42 +30,60 @@ function MinimalistLoader({ color = 'bg-emerald-600' }) {
   );
 }
 
-// Komponen Info Slider Baru (Diperbarui agar Elastis)
+// Komponen Info Slider Baru (Updated: Fetch from API)
 function InfoSlider() {
-  // Data dummy objek untuk prototipe dengan tanggal dan teks panjang untuk tes elastisitas
-  const dummyInfo = [
-    {
-      informasi: "Pemeliharaan sistem dijadwalkan pada hari Sabtu pukul 23:00 WIB. Layanan mungkin akan terganggu sementara waktu selama proses berlangsung. Mohon maaf atas ketidaknyamanan ini. Kami berupaya untuk menyelesaikan pemeliharaan secepat mungkin agar Anda dapat kembali menggunakan layanan kami dengan normal.",
-      createAt: "2025-11-10T08:00:00Z"
-    },
-    {
-      informasi: "Fitur baru 'Token Checker V2' kini telah tersedia! Nikmati tampilan yang lebih segar dan informasi yang lebih lengkap untuk memeriksa status token Anda dengan mudah.",
-      createAt: "2025-11-09T14:30:00Z"
-    },
-    {
-      informasi: "Jangan pernah membagikan token Anda kepada pihak yang tidak berwenang. Keamanan akun Anda adalah prioritas kami. Selalu pastikan Anda mengakses layanan dari domain resmi.",
-      createAt: "2025-11-08T09:15:00Z"
-    }
-  ];
-
+  const [infos, setInfos] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false); // State untuk kontrol animasi
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Fetch Data Informasi
   useEffect(() => {
-    if (dummyInfo.length <= 1) return;
+    const fetchInfos = async () => {
+      try {
+        // Mengambil data dari endpoint yang diminta
+        // Pastikan endpoint ini Public atau token user tersedia (jika perlu auth)
+        const res = await api.get('/api/public/xlinformation/getinformation');
+        // Sort data terbaru di depan
+        const sortedData = res.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setInfos(sortedData);
+      } catch (err) {
+        console.error("Gagal mengambil informasi:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchInfos();
+  }, []);
+
+  // Logic Slider Otomatis
+  useEffect(() => {
+    if (infos.length <= 1) return;
 
     const interval = setInterval(() => {
-      setIsAnimating(true); // Mulai animasi keluar
+      setIsAnimating(true);
       setTimeout(() => {
-        setCurrentIndex((prevIndex) => (prevIndex + 1) % dummyInfo.length);
-        setIsAnimating(false); // Selesai animasi keluar, mulai animasi masuk (otomatis karena key berubah)
-      }, 300); // Durasi animasi keluar (harus sinkron dengan CSS transition)
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % infos.length);
+        setIsAnimating(false);
+      }, 300);
     }, 6000);
 
     return () => clearInterval(interval);
-  }, [dummyInfo.length]);
+  }, [infos.length]);
 
-  const currentItem = dummyInfo[currentIndex];
+  // Render Loading atau Null jika tidak ada data
+  if (isLoading) {
+    return (
+      <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 mb-8 min-h-[130px] flex items-center justify-center">
+        <MinimalistLoader />
+      </div>
+    );
+  }
+
+  if (infos.length === 0) return null;
+
+  const currentItem = infos[currentIndex];
 
   return (
     <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 mb-8 relative min-h-[130px] flex flex-col">
@@ -89,22 +107,24 @@ function InfoSlider() {
           className={`flex-1 transition-opacity duration-300 ease-in-out ${isAnimating ? 'opacity-0' : 'opacity-100'}`}
         >
           <p className="text-sm text-emerald-700 text-justify leading-relaxed">
-            {currentItem.informasi}
+            {currentItem.information}
           </p>
           <p className="text-xs text-emerald-500 mt-2 font-medium text-right">
-            {new Date(currentItem.createAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            {new Date(currentItem.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
           </p>
         </div>
 
         {/* Indikator Dots */}
-        <div className="flex gap-1.5 mt-4 justify-center">
-          {dummyInfo.map((_, index) => (
-            <div
-              key={index}
-              className={`h-1.5 rounded-full transition-all duration-300 ${index === currentIndex ? 'w-4 bg-emerald-400' : 'w-1.5 bg-emerald-200'}`}
-            ></div>
-          ))}
-        </div>
+        {infos.length > 1 && (
+          <div className="flex gap-1.5 mt-4 justify-center">
+            {infos.slice(0, 5).map((_, index) => (
+              <div
+                key={index}
+                className={`h-1.5 rounded-full transition-all duration-300 ${index === currentIndex ? 'w-4 bg-emerald-400' : 'w-1.5 bg-emerald-200'}`}
+              ></div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

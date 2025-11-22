@@ -101,10 +101,26 @@ function TokenListItem({ token, onAction, actionLabel, actionColor, showRevokedS
                     {isExpired && token.isactive && (
                         <span className="text-[10px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-bold tracking-wide">EXPIRED</span>
                     )}
+                    {!isExpired && token.isactive && (
+                        <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold tracking-wide">ACTIVE</span>
+                    )}
                 </div>
                 {/* Token lebih gelap sedikit */}
-                <p className="text-xs text-gray-600 truncate mt-1 font-mono opacity-80 group-hover:opacity-100 transition-opacity">
-                    {token.token.substring(0, 20)}...
+                {/* <p className="text-xs text-gray-600 truncate mt-1 font-mono opacity-80 group-hover:opacity-100 transition-opacity">
+                    {token.token.substring(0, 50)}...
+                </p> */}
+                {
+                    token.isactive ?
+                        <p className="text-xs text-green-700  truncate mt-1 font-mono opacity-80 group-hover:opacity-100 transition-opacity">
+                            {token.token.substring(0, 50)}...
+                        </p>
+                        :
+                        <p className="text-xs text-red-700  truncate mt-1 font-mono opacity-80 group-hover:opacity-100 transition-opacity">
+                            {token.token.substring(0, 50)}...
+                        </p>
+                }
+                <p className="text-[11px] text-gray-500 mt-2 font-medium">
+                    Created: {new Date(token.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: '2-digit' })}
                 </p>
                 <p className="text-[11px] text-gray-500 mt-1 font-medium">
                     Exp: {new Date(token.expiredAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: '2-digit' })}
@@ -246,7 +262,7 @@ export default function DashboardV2() {
                         <div>
                             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Dashboard Admin</h1>
                             {/* Tampilkan username dinamis di sini */}
-                            <p className="text-gray-600 font-medium mt-1">Selamat datang kembali, {adminUsername}!</p>
+                            <p className="text-gray-600 font-medium mt-1">Selamat datang kembali, {adminUsername.toUpperCase()}!</p>
                         </div>
                         {/* Tombol LOGOUT pindah ke sini */}
                         <button onClick={() => { setIsLoggingOut(true); setTimeout(() => { localStorage.removeItem('token'); router.push('/auth/loginv2') }, 1500) }} className="text-sm font-semibold text-white hover:text-white/90 bg-red-600 px-4 py-2 rounded-xl shadow-sm hover:shadow transition-all hover:bg-red-700">
@@ -300,12 +316,21 @@ export default function DashboardV2() {
                                 </div>
                                 <span className="text-sm font-semibold text-gray-700 group-hover:text-blue-700 transition-colors">Refresh Data</span>
                             </button>
-                            <div className="hidden sm:flex flex-col items-center justify-center p-6 bg-gray-50 rounded-2xl border border-gray-200 opacity-60 cursor-not-allowed">
+                            {/* <div className="hidden sm:flex flex-col items-center justify-center p-6 bg-gray-50 rounded-2xl border border-gray-200 opacity-60 cursor-not-allowed">
                                 <div className="w-12 h-12 bg-gray-200 text-gray-400 rounded-full flex items-center justify-center mb-3">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                 </div>
                                 <span className="text-sm font-medium text-gray-400">Settings</span>
-                            </div>
+                            </div> */}
+                            <button onClick={() => router.push('/informationcenter')} className="flex flex-col items-center justify-center p-6 bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:bg-gray-50 transition-all group">
+                                <div className="w-12 h-12 bg-gray-100 text-gray-600 rounded-full flex items-center justify-center mb-3 group-hover:bg-gray-200 transition-all">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 9l3 3m0 0l-3 3m3-3H5M3 12a9 9 0 1118 0 9 9 0 01-18 0z" />
+                                    </svg>
+
+                                </div>
+                                <span className="text-sm font-bold text-gray-700">Manage Information</span>
+                            </button>
                             {/* Tombol BACK TO V1 pindah ke sini */}
                             <button onClick={() => router.push('/dashboard')} className="flex flex-col items-center justify-center p-6 bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:bg-gray-50 transition-all group">
                                 <div className="w-12 h-12 bg-gray-100 text-gray-600 rounded-full flex items-center justify-center mb-3 group-hover:bg-gray-200 transition-all">
