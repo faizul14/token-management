@@ -205,7 +205,7 @@ export default function InformationPage() {
     // Fetch Data
     const fetchInfos = async () => {
         const token = localStorage.getItem('token')
-        if (!token) { router.push('/auth/login'); return }
+        if (!token) { router.push('/auth/loginv2'); return }
 
         const payload = getPayloadFromToken(token)
         if(payload && payload.username){
