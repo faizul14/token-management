@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 
 // Konfigurasi API
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BASE_URL,
+  baseURL: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:5000',
   timeout: 30000,
   headers: { 'Accept': '*/*' }
 })
@@ -30,6 +30,64 @@ function MinimalistLoader({ color = 'bg-emerald-600' }) {
   );
 }
 
+// Kartu Paket Harga (Updated: WhatsApp Redirect)
+function PricingCard({ title, price, unit, features, gradient, icon, popular }) {
+
+  const handleBuy = () => {
+    const phoneNumber = '6287863620819'; // Nomor tujuan
+    // Format pesan WA
+    const message = `Halo Admin XLToken, saya tertarik untuk membeli paket ini:\n\n*${title}*\nHarga: ${price} ${unit}\n\nMohon informasi pembayaran lebih lanjut. Terima kasih.`;
+
+    // Encode pesan agar aman di URL
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+
+    // Buka tab baru ke WA
+    window.open(whatsappUrl, '_blank');
+  };
+
+  return (
+    <div className={`relative overflow-hidden rounded-3xl p-6 sm:p-8 shadow-lg ${gradient} text-white transition-transform hover:-translate-y-1 border border-white/10`}>
+      {/* Decorative Circle */}
+      <div className="absolute -top-12 -right-12 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+
+      <div className="relative z-10 flex flex-col h-full justify-between">
+        <div>
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
+              {icon}
+            </div>
+            {popular && <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-white/10">Popular</span>}
+          </div>
+          <h3 className="text-lg font-bold opacity-90 mb-1">{title}</h3>
+          <div className="flex items-baseline gap-1 mb-6">
+            <span className="text-3xl sm:text-4xl font-bold tracking-tight">{price}</span>
+            <span className="text-sm font-medium opacity-80">{unit}</span>
+          </div>
+          <ul className="space-y-3 mb-8">
+            {features.map((feature, idx) => (
+              <li key={idx} className="flex items-center gap-3 text-sm font-medium">
+                <div className="p-0.5 rounded-full bg-white/20 flex-shrink-0">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                </div>
+                {feature}
+              </li>
+            ))}
+          </ul>
+        </div>
+        {/* Tombol Buy diperbarui dengan onClick */}
+        <button
+          onClick={handleBuy}
+          className="w-full py-3.5 bg-white text-gray-900 font-bold rounded-xl shadow-lg hover:bg-gray-50 transition-all active:scale-95 text-sm uppercase tracking-wider flex justify-center items-center gap-2"
+        >
+          <span>Beli Sekarang</span>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // Komponen Info Slider Baru (Updated: Fetch from API)
 function InfoSlider() {
   const [infos, setInfos] = useState([]);
@@ -41,8 +99,7 @@ function InfoSlider() {
   useEffect(() => {
     const fetchInfos = async () => {
       try {
-        // Mengambil data dari endpoint yang diminta
-        // Pastikan endpoint ini Public atau token user tersedia (jika perlu auth)
+        // Mengambil data dari endpoint public
         const res = await api.get('/api/public/xlinformation/getinformation');
         // Sort data terbaru di depan
         const sortedData = res.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -130,14 +187,16 @@ function InfoSlider() {
   );
 }
 
-// Komponen Card Hasil Pengecekan (Sama seperti V1)
+// Komponen Card Hasil Pengecekan (Updated: Transaction Limit Logic)
 function TokenInfoCard({ token }) {
   const isActive = token.isactive;
   const isExpired = new Date(token.expiredAt) < new Date();
   const now = new Date();
   const diffTime = new Date(token.expiredAt).getTime() - now.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const limit = token.transactionslimit !== undefined ? token.transactionslimit : 0;
 
+  // --- Logic Warna Status ---
   let statusBadge;
   if (!isActive) {
     statusBadge = <span className="px-3 py-1 rounded-full text-xs font-bold tracking-wide bg-red-100 text-red-800">REVOKED</span>;
@@ -145,6 +204,21 @@ function TokenInfoCard({ token }) {
     statusBadge = <span className="px-3 py-1 rounded-full text-xs font-bold tracking-wide bg-orange-100 text-orange-800">EXPIRED</span>;
   } else {
     statusBadge = <span className="px-3 py-1 rounded-full text-xs font-bold tracking-wide bg-green-100 text-green-800">ACTIVE</span>;
+  }
+
+  // --- Logic Warna Limit Transaksi ---
+  let limitClass = "text-emerald-600";
+  let limitBg = "bg-emerald-50 border-emerald-100";
+  let limitTitle = "text-emerald-800";
+
+  if (limit <= 0) {
+    limitClass = "text-red-600";
+    limitBg = "bg-red-50 border-red-100";
+    limitTitle = "text-red-800";
+  } else if (limit <= 10) { // Ambang batas kuning (sedikit)
+    limitClass = "text-orange-600";
+    limitBg = "bg-orange-50 border-orange-100";
+    limitTitle = "text-orange-800";
   }
 
   return (
@@ -169,26 +243,36 @@ function TokenInfoCard({ token }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+      <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+        {/* Card Sisa Waktu */}
+        <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex flex-col justify-between">
           <p className="text-emerald-800 font-medium mb-1">Sisa Waktu</p>
           <p className={`text-2xl font-bold ${diffDays <= 7 ? 'text-orange-600' : 'text-emerald-600'}`}>
             {isActive && !isExpired ? `${diffDays} Hari` : '-'}
           </p>
         </div>
-        <div className="space-y-3 py-2">
-          <div>
-            <p className="text-gray-500 text-xs">Dibuat Pada</p>
-            <p className="font-medium text-gray-900">
-              {new Date(token.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-            </p>
-          </div>
-          <div>
-            <p className="text-gray-500 text-xs">Kadaluwarsa</p>
-            <p className="font-medium text-gray-900">
-              {new Date(token.expiredAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-            </p>
-          </div>
+
+        {/* Card Limit Transaksi */}
+        <div className={`${limitBg} p-4 rounded-2xl border flex flex-col justify-between`}>
+          <p className={`${limitTitle} font-medium mb-1`}>Sisa Limit</p>
+          <p className={`text-2xl font-bold ${limitClass}`}>
+            {limit} <span className="text-xs font-medium opacity-70">x Transaksi</span>
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <p className="text-gray-500 text-xs mb-1">Dibuat Pada</p>
+          <p className="font-medium text-gray-900">
+            {new Date(token.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-gray-500 text-xs mb-1">Kadaluwarsa</p>
+          <p className="font-medium text-gray-900">
+            {new Date(token.expiredAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
         </div>
       </div>
     </div>
@@ -236,14 +320,14 @@ export default function CheckTokenPageV2() {
             .animate-fade-in-up { animation: fade-in-up 0.5s ease-out; }
         `}</style>
 
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-[30px] shadow-2xl p-8 sm:p-10 relative overflow-hidden">
+      <div className="flex-1 flex items-center justify-center p-4 pb-10">
+        <div className="w-full max-w-4xl"> {/* Max width diperbesar untuk menampung Pricing Cards */}
+          <div className="bg-white rounded-[30px] shadow-2xl p-8 sm:p-10 relative overflow-hidden mb-8">
             {/* Hiasan Background */}
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-50 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
             <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-50 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
 
-            <div className="relative z-10">
+            <div className="relative z-10 max-w-md mx-auto"> {/* Form tetap centered dan max-w-md */}
               {/* --- Info Slider Ditambahkan di sini --- */}
               <InfoSlider />
               {/* --------------------------------------- */}
@@ -290,6 +374,33 @@ export default function CheckTokenPageV2() {
                 )}
                 {tokenData && <TokenInfoCard token={tokenData} />}
               </div>
+            </div>
+          </div>
+
+          {/* --- Pricing Section (Public) --- */}
+          <div className="mt-12 mb-0">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-gray-900">Pilihan Paket Token</h2>
+              <p className="text-gray-500 mt-1">Pilih paket yang sesuai dengan kebutuhan bisnis Anda.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <PricingCard
+                title="TOKEN UNLIMITED"
+                price="200K"
+                unit="/ bulan"
+                features={["Unlimited Transaksi", "Prioritas Support", "Masa Aktif 30 Hari"]}
+                gradient="bg-gradient-to-br from-indigo-600 to-purple-700"
+                popular={true}
+                icon={<svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
+              />
+              <PricingCard
+                title="TOKEN UMKM"
+                price="5K"
+                unit="/ transaksi"
+                features={["Bayar per Transaksi", "Cocok untuk Pemula", "Masa Aktif Fleksibel"]}
+                gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
+                icon={<svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+              />
             </div>
           </div>
         </div>

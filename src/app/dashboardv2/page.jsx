@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 
 // --- Konfigurasi API ---
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_BASE_URL,
+    baseURL: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:5000',
     timeout: 10000,
     headers: { 'Content-Type': 'application/json' }
 })
@@ -59,14 +59,12 @@ function MinimalistLoader({ color = 'bg-gray-800' }) {
     );
 }
 
-// Kartu Statistik Dashboard (Diperbarui Style)
+// Kartu Statistik Dashboard
 function StatCard({ title, value, subValue, icon, bgColor = 'bg-white', textColor = 'text-gray-900' }) {
     return (
-        // Menggunakan shadow-md agar lebih tegas, border-gray-200 untuk kontras lebih baik
         <div className={`${bgColor} p-6 rounded-3xl shadow-md border border-gray-200/60 flex flex-col justify-between min-h-[160px] transition-all hover:shadow-lg`}>
             <div className="flex justify-between items-start">
                 <div>
-                    {/* Warna judul sedikit lebih gelap */}
                     <h3 className={`text-sm font-semibold mb-1 ${bgColor === 'bg-white' ? 'text-gray-600' : 'text-white/90'}`}>{title}</h3>
                     <p className={`text-4xl font-bold ${textColor}`}>{value}</p>
                 </div>
@@ -83,15 +81,15 @@ function StatCard({ title, value, subValue, icon, bgColor = 'bg-white', textColo
     )
 }
 
-// Item Daftar Token (Diperbarui Style & Ditambah Status Revoked)
+// Item Daftar Token
 function TokenListItem({ token, onAction, actionLabel, actionColor, showRevokedStatus = false }) {
     const isExpired = new Date(token.expiredAt) < new Date();
+    const limitExhausted = token.transactionslimit <= 0;
 
     return (
         <div className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors group border-b border-gray-100 last:border-0">
             <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                    {/* Nama user lebih gelap dan tebal */}
+                <div className="flex items-center gap-2 flex-wrap">
                     <h4 className="text-sm font-bold text-gray-900 truncate">{token.username}</h4>
 
                     {/* Badge Status */}
@@ -101,30 +99,29 @@ function TokenListItem({ token, onAction, actionLabel, actionColor, showRevokedS
                     {isExpired && token.isactive && (
                         <span className="text-[10px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-bold tracking-wide">EXPIRED</span>
                     )}
-                    {!isExpired && token.isactive && (
-                        <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold tracking-wide">ACTIVE</span>
+                    {!isExpired && token.isactive && limitExhausted && (
+                        <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold tracking-wide">LIMIT 0</span>
                     )}
                 </div>
-                {/* Token lebih gelap sedikit */}
-                {/* <p className="text-xs text-gray-600 truncate mt-1 font-mono opacity-80 group-hover:opacity-100 transition-opacity">
-                    {token.token.substring(0, 50)}...
-                </p> */}
-                {
-                    token.isactive ?
-                        <p className="text-xs text-green-700  truncate mt-1 font-mono opacity-80 group-hover:opacity-100 transition-opacity">
-                            {token.token.substring(0, 50)}...
-                        </p>
-                        :
-                        <p className="text-xs text-red-700  truncate mt-1 font-mono opacity-80 group-hover:opacity-100 transition-opacity">
-                            {token.token.substring(0, 50)}...
-                        </p>
-                }
-                <p className="text-[11px] text-gray-500 mt-2 font-medium">
-                    Created: {new Date(token.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: '2-digit' })}
+                <p className="text-xs text-gray-600 truncate mt-1 font-mono opacity-80 group-hover:opacity-100 transition-opacity">
+                    {token.token.substring(0, 20)}...
                 </p>
-                <p className="text-[11px] text-gray-500 mt-1 font-medium">
-                    Exp: {new Date(token.expiredAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: '2-digit' })}
-                </p>
+                <div className="flex gap-3 mt-1">
+                    <p className="text-[11px] text-gray-500 font-medium">
+                        Created: {new Date(token.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: '2-digit' })}
+                    </p>
+                </div>
+                <div className="flex gap-3 mt-1">
+                    <p className="text-[11px] text-gray-500 font-medium">
+                        Exp: {new Date(token.expiredAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: '2-digit' })}
+                    </p>
+                </div>
+                
+                <div className="flex gap-3 mt-1">
+                    <p className="text-[11px] text-blue-600 font-bold bg-blue-50 rounded">
+                        Transaction Limit: {token.transactionslimit}
+                    </p>
+                </div>
             </div>
             <button
                 onClick={() => onAction(token)}
@@ -141,7 +138,7 @@ function Modal({ show, onClose, title, children }) {
     if (!show) return null;
     return (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex justify-center items-center p-4 transition-all" onClick={onClose}>
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-8 scale-100 transition-all border border-gray-200" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-8 scale-100 transition-all border border-gray-200 overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-bold text-gray-900">{title}</h3>
                     <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100 transition-colors">
@@ -164,22 +161,26 @@ export default function DashboardV2() {
     const router = useRouter()
     const [isLoggingOut, setIsLoggingOut] = useState(false)
     const [isCheckingAuth, setCheckingAuth] = useState(true)
-    const [adminUsername, setAdminUsername] = useState('Admin') // State untuk username
+    const [adminUsername, setAdminUsername] = useState('Admin')
 
     // Modal & Form States
     const [isCreateModalOpen, setCreateModalOpen] = useState(false)
     const [isActionModalOpen, setActionModalOpen] = useState(false)
     const [selectedToken, setSelectedToken] = useState(null)
+
+    // Form Inputs
     const [newUsername, setNewUsername] = useState('')
     const [newExpiryDays, setNewExpiryDays] = useState(30)
+    const [newLimit, setNewLimit] = useState(100) // Default limit transaksi
+
     const [extendDays, setExtendDays] = useState(30)
+    const [updateLimit, setUpdateLimit] = useState(100) // State untuk update limit
 
     // --- Data Fetching ---
     const fetchTokens = async () => {
         const token = localStorage.getItem('token')
         if (!token) { router.push('/auth/loginv2'); return }
 
-        // Decode token untuk mendapatkan username
         const payload = getPayloadFromToken(token);
         if (payload && payload.username) {
             setAdminUsername(payload.username);
@@ -208,8 +209,17 @@ export default function DashboardV2() {
         e.preventDefault()
         if (!newUsername || newExpiryDays <= 0) return alert('Data tidak valid.')
         try {
-            await api.post('/api/xltoken/createtoken', { username: newUsername, expired: parseInt(newExpiryDays) })
-            setCreateModalOpen(false); setNewUsername(''); fetchTokens()
+            // Mengirim transaksi limit sesuai requirement baru
+            await api.post('/api/xltoken/createtoken', {
+                username: newUsername,
+                expired: parseInt(newExpiryDays),
+                transactionslimit: parseInt(newLimit)
+            })
+            setCreateModalOpen(false);
+            setNewUsername('');
+            setNewExpiryDays(30);
+            setNewLimit(100);
+            fetchTokens()
         } catch (err) { alert(`Gagal: ${err.response?.data?.message || err.message}`) }
     }
 
@@ -229,53 +239,55 @@ export default function DashboardV2() {
             setActionModalOpen(false);
         } catch (err) { alert(`Gagal hapus: ${err.message}`) }
     }
+
     const handleExtend = async (e) => {
         e.preventDefault();
         try {
-            const res = await api.put(`/api/xltoken/updatetoken/${selectedToken._id}`, { expiredAt: parseInt(extendDays) })
+            // Mengirim expiredAt dan transactionslimit saat update
+            const res = await api.put(`/api/xltoken/updatetoken/${selectedToken._id}`, {
+                expiredAt: parseInt(extendDays),
+                transactionslimit: parseInt(updateLimit)
+            })
             setTokens(prev => prev.map(t => t._id === res.data.data._id ? res.data.data : t))
             setActionModalOpen(false);
-        } catch (err) { alert(`Gagal extend: ${err.message}`) }
+        } catch (err) { alert(`Gagal update: ${err.message}`) }
     }
 
     const openActionModal = (token) => {
         setSelectedToken(token);
         setActionModalOpen(true);
-        setExtendDays(30); // Reset default
+        setExtendDays(30); // Reset default days
+        setUpdateLimit(token.transactionslimit || 100); // Pre-fill dengan limit yang ada
     }
 
 
     if (isCheckingAuth) return <div className="min-h-screen flex justify-center items-center bg-[#F0F2F5]"><MinimalistLoader color="bg-gray-600" /></div>
 
     return (
-        // Background lebih gelap sedikit agar kartu 'pop out'
         <div className="min-h-screen bg-[#F0F2F5] font-['Poppins',_sans-serif] text-[#1A1C23] flex flex-col">
-            {/* Import Font Poppins dari Google Fonts */}
             <style jsx global>{`
                 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
             `}</style>
 
             <div className="flex-1 p-6 sm:p-8">
                 <div className="max-w-6xl mx-auto">
-                    {/* Header Simple */}
+                    {/* Header */}
                     <header className="mb-8 flex justify-between items-center">
                         <div>
                             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Dashboard Admin</h1>
-                            {/* Tampilkan username dinamis di sini */}
                             <p className="text-gray-600 font-medium mt-1">Selamat datang kembali, {adminUsername.toUpperCase()}!</p>
                         </div>
-                        {/* Tombol LOGOUT pindah ke sini */}
                         <button onClick={() => { setIsLoggingOut(true); setTimeout(() => { localStorage.removeItem('token'); router.push('/auth/loginv2') }, 1500) }} className="text-sm font-semibold text-white hover:text-white/90 bg-red-600 px-4 py-2 rounded-xl shadow-sm hover:shadow transition-all hover:bg-red-700">
                             Logout
                         </button>
                     </header>
 
-                    {/* 1. Statistik Cards Row */}
+                    {/* Stats */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                         <StatCard
                             title="Sistem Status"
                             value="Normal"
-                            bgColor="bg-gray-900" // Ganti ke gelap agar lebih elegan/minimalis
+                            bgColor="bg-gray-900"
                             textColor="text-white"
                             subValue={<span className="text-gray-300 font-medium text-sm">Semua layanan berjalan optimal.</span>}
                             icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
@@ -300,7 +312,7 @@ export default function DashboardV2() {
                         />
                     </div>
 
-                    {/* 2. Quick Actions Row */}
+                    {/* Quick Actions */}
                     <div className="mb-8">
                         <h2 className="text-lg font-bold text-gray-900 mb-4 tracking-tight">Quick Actions</h2>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -316,22 +328,14 @@ export default function DashboardV2() {
                                 </div>
                                 <span className="text-sm font-semibold text-gray-700 group-hover:text-blue-700 transition-colors">Refresh Data</span>
                             </button>
-                            {/* <div className="hidden sm:flex flex-col items-center justify-center p-6 bg-gray-50 rounded-2xl border border-gray-200 opacity-60 cursor-not-allowed">
-                                <div className="w-12 h-12 bg-gray-200 text-gray-400 rounded-full flex items-center justify-center mb-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </div>
-                                <span className="text-sm font-medium text-gray-400">Settings</span>
-                            </div> */}
                             <button onClick={() => router.push('/informationcenter')} className="flex flex-col items-center justify-center p-6 bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:bg-gray-50 transition-all group">
                                 <div className="w-12 h-12 bg-gray-100 text-gray-600 rounded-full flex items-center justify-center mb-3 group-hover:bg-gray-200 transition-all">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 9l3 3m0 0l-3 3m3-3H5M3 12a9 9 0 1118 0 9 9 0 01-18 0z" />
                                     </svg>
-
                                 </div>
                                 <span className="text-sm font-bold text-gray-700">Manage Information</span>
                             </button>
-                            {/* Tombol BACK TO V1 pindah ke sini */}
                             <button onClick={() => router.push('/dashboard')} className="flex flex-col items-center justify-center p-6 bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:bg-gray-50 transition-all group">
                                 <div className="w-12 h-12 bg-gray-100 text-gray-600 rounded-full flex items-center justify-center mb-3 group-hover:bg-gray-200 transition-all">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z" /></svg>
@@ -341,7 +345,7 @@ export default function DashboardV2() {
                         </div>
                     </div>
 
-                    {/* 3. Two Columns Layout for Lists */}
+                    {/* Lists */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         {/* Kolom Kiri: Active Tokens */}
                         <div className="bg-white p-6 rounded-3xl shadow-md border border-gray-200/60">
@@ -384,7 +388,7 @@ export default function DashboardV2() {
                                                 actionLabel="Detail"
                                                 actionColor="border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 bg-white"
                                                 onAction={openActionModal}
-                                                showRevokedStatus={true} // Aktifkan status revoked merah
+                                                showRevokedStatus={true}
                                             />
                                         ))
                                     ) : (
@@ -404,6 +408,7 @@ export default function DashboardV2() {
             </footer>
 
             {/* --- MODALS --- */}
+
             {/* 1. Create Modal */}
             <Modal show={isCreateModalOpen} onClose={() => setCreateModalOpen(false)} title="Buat Token Baru">
                 <form onSubmit={handleCreateToken} className="space-y-5">
@@ -411,9 +416,15 @@ export default function DashboardV2() {
                         <label className="block text-sm font-bold text-gray-800 mb-2">Username</label>
                         <input type="text" value={newUsername} onChange={e => setNewUsername(e.target.value)} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium text-gray-900" placeholder="Masukkan username unik..." required />
                     </div>
-                    <div>
-                        <label className="block text-sm font-bold text-gray-800 mb-2">Masa Aktif (Hari)</label>
-                        <input type="number" value={newExpiryDays} onChange={e => setNewExpiryDays(e.target.value)} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium text-gray-900" min="1" required />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-800 mb-2">Masa Aktif (Hari)</label>
+                            <input type="number" value={newExpiryDays} onChange={e => setNewExpiryDays(e.target.value)} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium text-gray-900" min="1" required />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-800 mb-2">Limit Transaksi</label>
+                            <input type="number" value={newLimit} onChange={e => setNewLimit(e.target.value)} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium text-gray-900" min="1" required />
+                        </div>
                     </div>
                     <button type="submit" className="w-full py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200/50 mt-4">
                         Buat Token Sekarang
@@ -421,7 +432,7 @@ export default function DashboardV2() {
                 </form>
             </Modal>
 
-            {/* 2. Action/Manage Modal (Diperbarui Layoutnya) */}
+            {/* 2. Action/Manage Modal */}
             <Modal show={isActionModalOpen} onClose={() => setActionModalOpen(false)} title="Kelola Token">
                 {selectedToken && (
                     <div className="space-y-6">
@@ -432,29 +443,47 @@ export default function DashboardV2() {
                                     {selectedToken.isactive ? 'ACTIVE' : 'REVOKED'}
                                 </span>
                             </div>
-                            <div className="bg-white p-3 rounded-xl border border-gray-200 flex items-center justify-between gap-3 shadow-sm">
+                            <div className="bg-white p-3 rounded-xl border border-gray-200 flex items-center justify-between gap-3 shadow-sm mb-2">
                                 <code className="text-sm text-gray-700 truncate font-mono flex-1 font-medium">{selectedToken.token}</code>
                                 <button onClick={() => navigator.clipboard.writeText(selectedToken.token)} className="text-indigo-500 hover:bg-indigo-50 p-2 rounded-lg transition-colors" title="Copy Token">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
                                 </button>
                             </div>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-gray-500">Sisa Limit Transaksi:</span>
+                                <span className="font-bold text-gray-900 bg-gray-200 px-2 py-0.5 rounded">{selectedToken.transactionslimit}</span>
+                            </div>
                         </div>
 
                         <div>
-                            <h4 className="text-sm font-bold text-gray-900 mb-3">Perpanjang / Aktifkan Kembali</h4>
-                            {/* Perbaikan Layout: Gunakan flex-col pada mobile, flex-row pada layar lebih besar */}
-                            <form onSubmit={handleExtend} className="flex flex-col sm:flex-row gap-3">
-                                <input
-                                    type="number"
-                                    value={extendDays}
-                                    onChange={e => setExtendDays(e.target.value)}
-                                    className="w-full sm:flex-1 px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:bg-white font-medium text-gray-900"
-                                    placeholder="Tambah hari..."
-                                    min="1"
-                                    required
-                                />
-                                <button type="submit" className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-200/50 whitespace-nowrap">
-                                    Update
+                            <h4 className="text-sm font-bold text-gray-900 mb-3">Perbarui Token (Aktifkan/Extend)</h4>
+                            <form onSubmit={handleExtend} className="space-y-3">
+                                <div>
+                                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Tambah Hari Aktif</label>
+                                    <input
+                                        type="number"
+                                        value={extendDays}
+                                        onChange={e => setExtendDays(e.target.value)}
+                                        className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:bg-white font-medium text-gray-900"
+                                        placeholder="30"
+                                        min="1"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Set Limit Transaksi Baru</label>
+                                    <input
+                                        type="number"
+                                        value={updateLimit}
+                                        onChange={e => setUpdateLimit(e.target.value)}
+                                        className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:bg-white font-medium text-gray-900"
+                                        placeholder="100"
+                                        min="1"
+                                        required
+                                    />
+                                </div>
+                                <button type="submit" className="w-full px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-200/50 mt-2">
+                                    Update & Reactivate
                                 </button>
                             </form>
                         </div>
