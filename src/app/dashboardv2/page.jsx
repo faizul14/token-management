@@ -116,7 +116,7 @@ function TokenListItem({ token, onAction, actionLabel, actionColor, showRevokedS
                         Exp: {new Date(token.expiredAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: '2-digit' })}
                     </p>
                 </div>
-                
+
                 <div className="flex gap-3 mt-1">
                     <p className="text-[11px] text-blue-600 font-bold bg-blue-50 rounded">
                         Transaction Limit: {token.transactionslimit}
@@ -205,12 +205,13 @@ export default function DashboardV2() {
     const totalTokens = tokens.length;
 
     // --- Action Handlers ---
-    const handleCreateToken = async (e) => {
+    const handleCreateToken = async (e, type) => {
         e.preventDefault()
         if (!newUsername || newExpiryDays <= 0) return alert('Data tidak valid.')
         try {
+            const endpoint = type === 'random' ? "/api/xltoken/createtoken" : "/api/xltoken/createtokencustom"
             // Mengirim transaksi limit sesuai requirement baru
-            await api.post('/api/xltoken/createtoken', {
+            await api.post(endpoint, {
                 username: newUsername,
                 expired: parseInt(newExpiryDays),
                 transactionslimit: parseInt(newLimit)
@@ -410,25 +411,72 @@ export default function DashboardV2() {
             {/* --- MODALS --- */}
 
             {/* 1. Create Modal */}
-            <Modal show={isCreateModalOpen} onClose={() => setCreateModalOpen(false)} title="Buat Token Baru">
-                <form onSubmit={handleCreateToken} className="space-y-5">
+            <Modal
+                show={isCreateModalOpen}
+                onClose={() => setCreateModalOpen(false)}
+                title="Buat Token Baru"
+            >
+                <form className="space-y-5">
                     <div>
-                        <label className="block text-sm font-bold text-gray-800 mb-2">Username</label>
-                        <input type="text" value={newUsername} onChange={e => setNewUsername(e.target.value)} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium text-gray-900" placeholder="Masukkan username unik..." required />
+                        <label className="block text-sm font-bold text-gray-800 mb-2">
+                            Username
+                        </label>
+                        <input
+                            type="text"
+                            value={newUsername}
+                            onChange={e => setNewUsername(e.target.value)}
+                            className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium text-gray-900"
+                            placeholder="Masukkan username unik..."
+                            required
+                        />
                     </div>
+
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-bold text-gray-800 mb-2">Masa Aktif (Hari)</label>
-                            <input type="number" value={newExpiryDays} onChange={e => setNewExpiryDays(e.target.value)} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium text-gray-900" min="1" required />
+                            <label className="block text-sm font-bold text-gray-800 mb-2">
+                                Masa Aktif (Hari)
+                            </label>
+                            <input
+                                type="number"
+                                value={newExpiryDays}
+                                onChange={e => setNewExpiryDays(e.target.value)}
+                                className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium text-gray-900"
+                                min="1"
+                                required
+                            />
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-gray-800 mb-2">Limit Transaksi</label>
-                            <input type="number" value={newLimit} onChange={e => setNewLimit(e.target.value)} className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium text-gray-900" min="1" required />
+                            <label className="block text-sm font-bold text-gray-800 mb-2">
+                                Limit Transaksi
+                            </label>
+                            <input
+                                type="number"
+                                value={newLimit}
+                                onChange={e => setNewLimit(e.target.value)}
+                                className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:bg-white transition-all font-medium text-gray-900"
+                                min="1"
+                                required
+                            />
                         </div>
                     </div>
-                    <button type="submit" className="w-full py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200/50 mt-4">
-                        Buat Token Sekarang
-                    </button>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <button
+                            type="submit"
+                            onClick={(e) => handleCreateToken(e, "random")}
+                            className="w-full py-3.5 px-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200/50 mt-4"
+                        >
+                            Buat Token Random Sekarang
+                        </button>
+
+                        <button
+                            type="submit"
+                            onClick={(e) => handleCreateToken(e, "custom")}
+                            className="w-full py-3.5 px-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200/50 mt-4"
+                        >
+                            Buat Token Custom Sekarang
+                        </button>
+                    </div>
                 </form>
             </Modal>
 
