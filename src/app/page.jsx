@@ -57,8 +57,9 @@ function PricingCard({ title, price, unit, features, gradient, icon, popular }) 
             <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
               {icon}
             </div>
-            {popular && <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-white/10">Popular</span>}
+            {popular && <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-white/10">Popular / Tidak Tersedia</span>}
           </div>
+
           <h3 className="text-lg font-bold opacity-90 mb-1">{title}</h3>
           <div className="flex items-baseline gap-1 mb-6">
             <span className="text-3xl sm:text-4xl font-bold tracking-tight">{price}</span>
