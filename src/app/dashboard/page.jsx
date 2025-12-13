@@ -107,14 +107,25 @@ function TokenCard({ token, onRevoke, onExtend, onDelete }) {
     // Fungsi baru untuk handle share
     const handleShare = () => {
         const expiryDate = new Date(token.expiredAt);
-        const shareText = `
---- Token Info ---
-Username: ${token.username}
-Token: ${token.token}
-Status: ${token.isactive ? 'Active' : 'Revoked'}
-Expires: ${expiryDate.toLocaleString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
----
-        `.trim();
+        const shareText =
+            "```\n" +
+            "=== TOKEN INFO ===\n" +
+            `Username         : ${token.username}\n` +
+            `Status           : ${token.isactive ? "Active" : "Revoked"}\n` +
+            `Transaction Limit: ${token.transactionslimit}\n` +
+            `Expires          : ${expiryDate.toLocaleString("id-ID", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+            })}\n` +
+            "------------------\n" +
+            `TOKEN:\n${token.token}\n` +
+            "==================\n" +
+            "```";
+
+
 
         if (navigator.share) {
             navigator.share({
