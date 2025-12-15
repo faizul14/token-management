@@ -250,7 +250,7 @@ function TokenInfoCard({ token }) {
           <p className="text-emerald-800 font-medium mb-1">Sisa Waktu</p>
           <p className={`text-2xl font-bold ${diffDays <= 7 ? 'text-orange-600' : 'text-emerald-600'}`}>
             {/* {isActive && !isExpired ? `${diffDays} Hari` : '-'} */}
-            {isActive && !isExpired ? diffDays >= 100 ? `Unlimited` : `${diffDays} Hari` : '-'}
+            {isActive && !isExpired ? diffDays >= 100 ? <span className="text-xs sm:text-2xl sm:font-bold font-medium opacity-70">Unlimited <span className='text-2xl font-bold'>Hari</span></span> : `${diffDays} Hari` : '-'}
           </p>
         </div>
 
