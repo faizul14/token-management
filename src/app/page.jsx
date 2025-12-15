@@ -249,7 +249,8 @@ function TokenInfoCard({ token }) {
         <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex flex-col justify-between">
           <p className="text-emerald-800 font-medium mb-1">Sisa Waktu</p>
           <p className={`text-2xl font-bold ${diffDays <= 7 ? 'text-orange-600' : 'text-emerald-600'}`}>
-            {isActive && !isExpired ? `${diffDays} Hari` : '-'}
+            {/* {isActive && !isExpired ? `${diffDays} Hari` : '-'} */}
+            {isActive && !isExpired ? diffDays >= 100 ? `Unlimited` : `${diffDays} Hari` : '-'}
           </p>
         </div>
 
