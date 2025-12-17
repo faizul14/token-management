@@ -2,13 +2,22 @@
 import { useState, useEffect, useMemo } from 'react'
 import axios from 'axios'
 import { useRouter } from 'next/navigation'
+import { io } from "socket.io-client";
+
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
 // --- Konfigurasi API ---
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_BASE_URL,
+    baseURL: BASE_URL,
     timeout: 10000,
     headers: { 'Content-Type': 'application/json' }
 })
+
+// -- konfigurasi socket --
+const socket = io(BASE_URL, {
+    transports: ["websocket"],
+    autoConnect: false, // penting
+});
 
 // Interceptor
 api.interceptors.response.use(r => r, e => Promise.reject(e))
@@ -465,6 +474,25 @@ export default function TransactionsPage() {
         }
         fetchData()
     }, [router])
+
+    // Listen socket
+    useEffect(() => {
+        socket.connect();
+
+        socket.on("connect", () => {
+            console.log("✅ socket connected", socket.id);
+        });
+
+        socket.on("log:new", (newLog) => {
+            setLogs(prev => [newLog, ...prev]); // ⬅ realtime update
+        });
+
+        return () => {
+            socket.off("log:new");
+            socket.disconnect();
+        };
+    }, []);
+
 
     // --- Perhitungan Revenue ---
     const PRICE_PER_TRX = 5000;
