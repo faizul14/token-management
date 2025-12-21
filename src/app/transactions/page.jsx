@@ -495,7 +495,7 @@ export default function TransactionsPage() {
 
 
     // --- Perhitungan Revenue ---
-    const PRICE_PER_TRX = 5000;
+    const PRICE_PER_TRX = 10000;
 
     // Total Revenue (All Time)
     const totalRevenue = logs.length * PRICE_PER_TRX;
