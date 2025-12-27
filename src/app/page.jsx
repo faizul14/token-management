@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
+
 
 // Konfigurasi API
 const api = axios.create({
@@ -288,28 +290,59 @@ export default function CheckTokenPageV2() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const mainColor = 'bg-emerald-600';
   const mainColorHover = 'hover:bg-emerald-700';
   const textColor = 'text-emerald-600';
 
-  const handleCheckToken = async (e) => {
-    e.preventDefault()
-    if (!tokenInput) return setError('Silakan masukkan token terlebih dahulu')
-    setIsLoading(true); setError(null); setMessage(''); setTokenData(null)
+  const checkTokenGeneral = async (tokenValue) => {
+    setIsLoading(true)
+    setError(null)
+    setMessage('')
+    setTokenData(null)
 
     try {
-      const response = await api.post('/api/public/xltoken/publicchecktoken', { token: tokenInput })
-      const tokenInfo = response.data.data || response.data;
+      const response = await api.post(
+        '/api/public/xltoken/publicchecktoken',
+        { token: tokenValue }
+      )
+
+      const tokenInfo = response.data.data || response.data
+
       if (tokenInfo && tokenInfo.username && tokenInfo.expiredAt) {
-        setTokenData(tokenInfo); setMessage(response.data.message || 'Token berhasil ditemukan.')
+        setTokenData(tokenInfo)
+        setMessage(response.data.message || 'Token berhasil ditemukan.')
       } else {
         setError(response.data.message || 'Token valid, tapi data tidak lengkap.')
       }
     } catch (err) {
-      setError(`Pengecekan gagal: ${err.response?.data?.message || err.message || 'Terjadi kesalahan'}`)
-    } finally { setIsLoading(false) }
+      setError(
+        `Pengecekan gagal: ${err.response?.data?.message || err.message || 'Terjadi kesalahan'
+        }`
+      )
+    } finally {
+      setIsLoading(false)
+    }
   }
+
+  const handleCheckToken = async (e) => {
+    e.preventDefault()
+    if (!tokenInput) return setError('Silakan masukkan token terlebih dahulu')
+    checkTokenGeneral(tokenInput)
+  }
+
+  useEffect(() => {
+    const urlToken = searchParams.get('token')
+
+    if (urlToken) {
+      setTokenInput(urlToken)
+
+      // auto trigger check
+      checkTokenGeneral(urlToken)
+    }
+  }, [searchParams])
+
 
   return (
     <div className="min-h-screen w-full flex flex-col bg-gray-50 font-['Poppins',_sans-serif]">

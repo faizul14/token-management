@@ -61,11 +61,13 @@ const shareToken = async (printElement, token) => {
             hour: "2-digit",
             minute: "2-digit",
         })}\n` +
-        "------------------\n" +
-        `TOKEN:\n${token.token}\n` +
+        `Tgl Order Token  : ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WITA\n` +
+        `TOKEN            : ${token.token}\n` +
         "==================\n" +
+        `\nCheck Token Secara Berkala Pada Link Dibawah Ini\nhttps://tokenmanagement-fmp.vercel.app/?token=${token.token}\n` +
         "```";
 
+    // new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
     // 2. Helper Copy Clipboard
     const copyToClipboard = () => {
         const textArea = document.createElement("textarea");
@@ -209,7 +211,7 @@ const TokenExportTemplate = ({ token, printRef }) => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', margin: '0 0 6px 0' }}>
                     <span style={{ fontSize: '12px', color: '#333' }}>WAKTU</span>
                     <span style={{ fontSize: '12px', color: '#000', fontWeight: '600' }}>
-                        {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
+                        {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WITA
                     </span>
                 </div>
             </div>
