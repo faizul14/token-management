@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import axios from 'axios'
 import { useRouter } from 'next/navigation'
 import { io } from "socket.io-client";
+import FlipClock from '../../components/flipClock'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
@@ -277,9 +278,19 @@ function RecentActivityList({ logs }) {
     const [itemsPerPage, setItemsPerPage] = useState(5);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
+    const [inputValue, setInputValue] = useState('')
 
     useEffect(() => {
-        setCurrentPage(1);
+        const t = setTimeout(() => {
+            setSearchQuery(inputValue)
+        }, 300) // 250–400ms ideal
+
+        return () => clearTimeout(t)
+    }, [inputValue])
+
+
+    useEffect(() => {
+        setCurrentPage(prev => (prev !== 1 ? 1 : prev));
     }, [filter, itemsPerPage, searchQuery]);
 
     const filteredLogs = useMemo(() => {
@@ -350,8 +361,8 @@ function RecentActivityList({ logs }) {
                     <input
                         type="text"
                         placeholder="Cari berdasarkan username..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
                         className="w-full h-10 sm:w-auto bg-gray-100 border-none text-[10px] font-bold text-gray-600 py-1.5 px-3 rounded-xl focus:ring-1 focus:ring-emerald-500 focus:outline-none"
                     />
                 </div>
@@ -601,6 +612,10 @@ export default function TransactionsPage() {
                                     {timeRange === 'month' ? 'dari bulan lalu' : 'pertumbuhan total'}
                                 </span>
                             </div>
+                        </div>
+
+                        <div className="hidden sm:block absolute bottom-4 right-6 z-20">
+                            <FlipClock size="small" />
                         </div>
 
                         <div className="hidden sm:block relative z-10 w-full sm:w-auto px-4">
