@@ -276,23 +276,29 @@ function RecentActivityList({ logs }) {
     const [filter, setFilter] = useState('all');
     const [itemsPerPage, setItemsPerPage] = useState(5);
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [filter, itemsPerPage]);
+    }, [filter, itemsPerPage, searchQuery]);
 
     const filteredLogs = useMemo(() => {
         const now = new Date();
         return logs.filter(log => {
             const logDate = new Date(log.createdAt);
+            let dateMatch = true;
+
             if (filter === 'day') {
-                return logDate.toDateString() === now.toDateString();
+                dateMatch = logDate.toDateString() === now.toDateString();
             } else if (filter === 'month') {
-                return logDate.getMonth() === now.getMonth() && logDate.getFullYear() === now.getFullYear();
+                dateMatch = logDate.getMonth() === now.getMonth() && logDate.getFullYear() === now.getFullYear();
             }
-            return true;
+
+            const searchMatch = log.username.toLowerCase().includes(searchQuery.toLowerCase());
+
+            return dateMatch && searchMatch;
         });
-    }, [logs, filter]);
+    }, [logs, filter, searchQuery]);
 
     const totalPages = itemsPerPage === 'all' ? 1 : Math.ceil(filteredLogs.length / itemsPerPage);
 
@@ -340,6 +346,14 @@ function RecentActivityList({ logs }) {
                         <option value={20}>20 Rows</option>
                         <option value="all">All</option>
                     </select>
+
+                    <input
+                        type="text"
+                        placeholder="Cari berdasarkan username..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full h-10 sm:w-auto bg-gray-100 border-none text-[10px] font-bold text-gray-600 py-1.5 px-3 rounded-xl focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                    />
                 </div>
             </div>
 
@@ -413,7 +427,6 @@ function RecentActivityList({ logs }) {
         </div>
     )
 }
-
 // 5. My Cards / Info Widget
 function MyCardsWidget({ totalRevenue }) {
     return (
@@ -590,7 +603,7 @@ export default function TransactionsPage() {
                             </div>
                         </div>
 
-                        <div className="relative z-10 flex gap-3">
+                        <div className="hidden sm:block relative z-10 w-full sm:w-auto px-4">
                             <button className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-sm backdrop-blur-sm transition-all flex items-center gap-2">
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                                 Export Laporan
