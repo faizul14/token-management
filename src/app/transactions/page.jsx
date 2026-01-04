@@ -472,6 +472,21 @@ function MyCardsWidget({ totalRevenue }) {
     )
 }
 
+// check mobile device
+function useIsMobile(breakpoint = 640) {
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < breakpoint);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, [breakpoint]);
+
+    return isMobile;
+}
+
+
 // --- MAIN PAGE ---
 export default function TransactionsPage() {
     const [logs, setLogs] = useState([])
@@ -479,6 +494,7 @@ export default function TransactionsPage() {
     const [isCheckingAuth, setCheckingAuth] = useState(true)
     const [timeRange, setTimeRange] = useState('month') // 'month' or 'all'
     const router = useRouter()
+    const isMobile = useIsMobile();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -614,8 +630,8 @@ export default function TransactionsPage() {
                             </div>
                         </div>
 
-                        <div className="hidden sm:block absolute bottom-4 right-6 z-20">
-                            <FlipClock size="small" />
+                        <div className="absolute bottom-4 right-6 z-20">
+                            {!isMobile && <FlipClock size="small" />}
                         </div>
 
                         <div className="hidden sm:block relative z-10 w-full sm:w-auto px-4">
